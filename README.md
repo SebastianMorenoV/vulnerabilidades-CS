@@ -29,3 +29,19 @@ Proyecto completo enfocado en **OWASP A10:2021 – Server-Side Request Forgery (
   - Guía completa de explotación y remediación con comandos `curl` para la presentación en el laboratorio.
 
 👉 Para ver las instrucciones detalladas de ejecución y demostración, consulta el [README de Server-Side Request Forgery](./Server-Side%20Request%20Forgery%20%28SSRF%29/README.md).
+
+---
+
+### 3. [Cross-Site Scripting (XSS) y CSP](./Cross-Site%20Scripting%20%28XSS%29/)
+Proyecto interactivo enfocado en **OWASP A03:2021 – Injection / Cross-Site Scripting (XSS)** y **Content Security Policy (CSP)**:
+- **Código Vulnerable**: Muro de comentarios con inyección Stored XSS persistente sin sanitizar.
+- **Servidor del Atacante (C2 Listener)**: Receptor en vivo para exfiltración y secuestro de cookies de sesión (`/api/attacker/steal`).
+- **Código Mitigado**:
+  - Sanitización y codificación de entidades HTML con `HtmlUtils.htmlEscape()` (`htmlspecialchars`).
+  - Implementación de cabeceras HTTP de **Content Security Policy** (`default-src 'self'; script-src 'self'`).
+  - Protección de credenciales con bandera de cookies `HttpOnly; SameSite=Strict`.
+- **Interfaz Gráfica y Demostración**:
+  - Aplicación web interactiva en puerto `8081` (`http://localhost:8081`) con panel de pruebas y simulador de políticas CSP.
+  - Guión de exposición paso a paso para la clase.
+
+👉 Para ver las instrucciones detalladas de ejecución y demostración, consulta el [README de Cross-Site Scripting (XSS)](./Cross-Site%20Scripting%20%28XSS%29/README.md).

