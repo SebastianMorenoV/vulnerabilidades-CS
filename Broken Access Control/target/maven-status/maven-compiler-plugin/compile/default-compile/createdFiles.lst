@@ -1,0 +1,9 @@
+com\ciberseguridad\uc2\GlobalExceptionHandler.class
+com\ciberseguridad\uc2\mitigado\UsuarioControllerSeguro.class
+com\ciberseguridad\uc2\Perfil.class
+com\ciberseguridad\uc2\SecurityConfig.class
+com\ciberseguridad\uc2\Application.class
+com\ciberseguridad\uc2\PerfilRepository.class
+com\ciberseguridad\uc2\DataLoader.class
+com\ciberseguridad\uc2\vulnerable\UsuarioControllerVulnerable.class
+com\ciberseguridad\uc2\mitigado\AutorizacionService.class

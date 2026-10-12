@@ -1,0 +1,179 @@
+{
+  "info": {
+    "_postman_id": "ciberseguridad-idor-demo",
+    "name": "Demostración IDOR - Ciberseguridad Aplicada",
+    "description": "Colección lista para demostración en vivo de Broken Access Control (IDOR) y su mitigación en Spring Boot.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔴 1. Escenarios Vulnerables (IDOR)",
+      "item": [
+        {
+          "name": "1.1 Erick consulta su propio perfil (Legítimo - 200 OK)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "erick", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vulnerable/perfil/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "vulnerable", "perfil", "1"]
+            },
+            "description": "Erick se autentica legítimamente y consulta su propio perfil con ID=1."
+          }
+        },
+        {
+          "name": "1.2 [ATAQUE IDOR] Erick roba datos de la Víctima (200 OK)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "erick", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vulnerable/perfil/2",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "vulnerable", "perfil", "2"]
+            },
+            "description": "Erick cambia el ID a 2 en la URL. El servidor no valida pertenencia y entrega la información confidencial de 'victima'."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🟢 2. Escenarios Mitigados (Seguros)",
+      "item": [
+        {
+          "name": "2.1 Erick consulta su propio perfil seguro (200 OK)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "erick", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/perfil/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "perfil", "1"]
+            },
+            "description": "Erick consulta su propio perfil ID=1 en el endpoint protegido con validación de propiedad."
+          }
+        },
+        {
+          "name": "2.2 [ATAQUE BLOQUEADO] Erick intenta ver a la Víctima (403 Forbidden)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "erick", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/perfil/2",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "perfil", "2"]
+            },
+            "description": "Erick intenta acceder al ID 2. Spring Security detecta que 'erick' no es el dueño y retorna HTTP 403 Forbidden."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔵 3. Escenarios Adicionales (Admin y SpEL Username)",
+      "item": [
+        {
+          "name": "3.1 Admin audita el perfil de la Víctima (200 OK)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "admin", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/perfil/2",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "perfil", "2"]
+            },
+            "description": "El usuario con rol ADMIN sí está autorizado para ver cualquier perfil."
+          }
+        },
+        {
+          "name": "3.2 Erick consulta por Username - Propio (200 OK)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "erick", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/perfil/usuario/erick",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "perfil", "usuario", "erick"]
+            },
+            "description": "Evaluado con SpEL @PreAuthorize('hasRole(\\'ADMIN\\') or authentication.name == #usernameSolicitado')."
+          }
+        },
+        {
+          "name": "3.3 Erick consulta por Username - Víctima (403 Forbidden)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "erick", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/perfil/usuario/victima",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "perfil", "usuario", "victima"]
+            },
+            "description": "Erick intenta acceder al username 'victima'. La expresión SpEL evalúa false y deniega el acceso con HTTP 403."
+          }
+        }
+      ]
+    }
+  ]
+}
