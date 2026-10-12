@@ -62,7 +62,7 @@ class SsrfDemonstrationTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertTrue(response.getBody().contains("SuperSecretPostgres2026!#"));
-        assertTrue(response.getBody().contains("sk_live_51M0xDemoSecretKeyProd999"));
+        assertTrue(response.getBody().contains("clave_falsa_stripe_demo_laboratorio_123"));
     }
 
     @Test

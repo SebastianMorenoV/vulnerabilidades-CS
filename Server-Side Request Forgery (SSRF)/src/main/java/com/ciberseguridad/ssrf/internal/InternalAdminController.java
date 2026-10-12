@@ -38,7 +38,7 @@ public class InternalAdminController {
         respuesta.put("estado", "CONFIDENCIAL - USO EXCLUSIVO INTERNO");
         respuesta.put("database_host", "db-prod.internal.corp:5432");
         respuesta.put("database_password", "SuperSecretPostgres2026!#");
-        respuesta.put("stripe_api_key", "sk_live_51M0xDemoSecretKeyProd999");
+        respuesta.put("stripe_api_key", "clave_falsa_stripe_demo_laboratorio_123");
         respuesta.put("jwt_secret_signing_key", "ultra-secret-hmac-sha256-key-ciberseguridad");
         return ResponseEntity.ok(respuesta);
     }

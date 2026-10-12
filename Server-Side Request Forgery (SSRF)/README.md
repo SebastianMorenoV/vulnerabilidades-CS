@@ -134,7 +134,7 @@ curl -i -u alumno:password "http://localhost:8080/api/vulnerable/preview?url=htt
   "estado": "ÉXITO_VULNERABLE",
   "urlConsultada": "http://localhost:8080/internal/admin/claves-api",
   "codigoHttpRemoto": 200,
-  "contenidoRecuperado": "{\"servicio\":\"Bóveda de Credenciales Corporativas (Intranet Interna)\",\"estado\":\"CONFIDENCIAL - USO EXCLUSIVO INTERNO\",\"database_host\":\"db-prod.internal.corp:5432\",\"database_password\":\"SuperSecretPostgres2026!#\",\"stripe_api_key\":\"sk_live_51M0xDemoSecretKeyProd999\",\"jwt_secret_signing_key\":\"ultra-secret-hmac-sha256-key-ciberseguridad\"}",
+  "contenidoRecuperado": "{\"servicio\":\"Bóveda de Credenciales Corporativas (Intranet Interna)\",\"estado\":\"CONFIDENCIAL - USO EXCLUSIVO INTERNO\",\"database_host\":\"db-prod.internal.corp:5432\",\"database_password\":\"SuperSecretPostgres2026!#\",\"stripe_api_key\":\"clave_falsa_stripe_demo_laboratorio_123\",\"jwt_secret_signing_key\":\"ultra-secret-hmac-sha256-key-ciberseguridad\"}",
   "advertencia": "⚠️ EL SERVIDOR EJECUTÓ LA PETICIÓN INTERNA SIN VERIFICAR EL DESTINO."
 }
 ```
