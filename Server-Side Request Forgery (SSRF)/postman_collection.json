@@ -1,0 +1,293 @@
+{
+  "info": {
+    "_postman_id": "ciberseguridad-ssrf-demo",
+    "name": "Demostración SSRF - Ciberseguridad Aplicada",
+    "description": "Colección completa para demostración en vivo de Server-Side Request Forgery (SSRF) - Impacto y Mitigación (OWASP Top 10:2021 A10) en Spring Boot 3.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔴 1. Escenarios Vulnerables (SSRF)",
+      "item": [
+        {
+          "name": "1.1 [SSRF METADATOS CLOUD] Extracción de Claves IAM (AWS EC2 / IMDS)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vulnerable/preview?url=http://localhost:8080/latest/meta-data/iam/security-credentials",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "vulnerable", "preview"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "http://localhost:8080/latest/meta-data/iam/security-credentials"
+                }
+              ]
+            },
+            "description": "El atacante suministra la URL del servicio de metadatos de Cloud. El servidor vulnerable la consulta y le devuelve las llaves secretas temporales de AWS IAM (AccessKeyId, SecretAccessKey, Token)."
+          }
+        },
+        {
+          "name": "1.2 [SSRF INTRANET] Extracción de Bóveda de Claves y Base de Datos (GET)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vulnerable/preview?url=http://localhost:8080/internal/admin/claves-api",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "vulnerable", "preview"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "http://localhost:8080/internal/admin/claves-api"
+                }
+              ]
+            },
+            "description": "El atacante utiliza el endpoint vulnerable para acceder al servicio interno de claves confidenciales saltándose el perímetro de red."
+          }
+        },
+        {
+          "name": "1.3 [SSRF INTRANET] Extracción de Bóveda Interna (POST JSON)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"http://localhost:8080/internal/admin/claves-api\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/vulnerable/fetch-url",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "vulnerable", "fetch-url"]
+            },
+            "description": "Petición POST enviando la URL interna objetivo en el cuerpo JSON."
+          }
+        },
+        {
+          "name": "1.4 [SSRF ESQUEMA FILE] Lectura de Archivos Locales del Servidor (file://)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/vulnerable/preview?url=file:///C:/Windows/win.ini",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "vulnerable", "preview"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "file:///C:/Windows/win.ini"
+                }
+              ]
+            },
+            "description": "Demuestra el impacto de SSRF al permitir esquemas arbitrarios como file://, leyendo archivos directamente del sistema operativo."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🟢 2. Escenarios Mitigados (Seguros)",
+      "item": [
+        {
+          "name": "2.1 [MITIGADO] Intento de SSRF a Metadatos Bloqueado (400 Bad Request)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/preview?url=http://localhost:8080/latest/meta-data/iam/security-credentials",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "preview"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "http://localhost:8080/latest/meta-data/iam/security-credentials"
+                }
+              ]
+            },
+            "description": "El validador seguro detecta 'localhost' / loopback y bloquea la petición inmediatamente con HTTP 400 Bad Request."
+          }
+        },
+        {
+          "name": "2.2 [MITIGADO] Intento de SSRF a Intranet por IP 127.0.0.1 Bloqueado (400 Bad Request)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/preview?url=http://127.0.0.1:8080/internal/admin/claves-api",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "preview"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "http://127.0.0.1:8080/internal/admin/claves-api"
+                }
+              ]
+            },
+            "description": "El validador seguro detecta la IP de Loopback 127.0.0.1 y rechaza la conexión."
+          }
+        },
+        {
+          "name": "2.3 [MITIGADO] Intento de Protocolo file:// Bloqueado (400 Bad Request)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/preview?url=file:///C:/Windows/win.ini",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "preview"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "file:///C:/Windows/win.ini"
+                }
+              ]
+            },
+            "description": "Se aplica la whitelist de esquemas (solo http y https); el esquema file:// es bloqueado de inmediato."
+          }
+        },
+        {
+          "name": "2.4 [MITIGADO] Petición Legítima a Servicio Externo Público (200 OK)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/api/mitigado/preview?url=https://httpbin.org/get",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["api", "mitigado", "preview"],
+              "query": [
+                {
+                  "key": "url",
+                  "value": "https://httpbin.org/get"
+                }
+              ]
+            },
+            "description": "Demuestra que los servicios externos legítimos en Internet sí pueden ser consultados si no violan las políticas de SSRF."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔵 3. Verificación de Control Perimetral Directo",
+      "item": [
+        {
+          "name": "3.1 Alumno intenta acceder DIRECTAMENTE a /internal/admin/claves-api (403 Forbidden)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "alumno", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/internal/admin/claves-api",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["internal", "admin", "claves-api"]
+            },
+            "description": "Demuestra que la bóveda de claves internas está correctamente protegida por roles contra accesos externos directos del usuario estándar (recibe 403 Forbidden)."
+          }
+        },
+        {
+          "name": "3.2 Administrador accede DIRECTAMENTE a /internal/admin/claves-api (200 OK)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "admin", "type": "string" },
+                { "key": "password", "value": "password", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080/internal/admin/claves-api",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["internal", "admin", "claves-api"]
+            },
+            "description": "El administrador legítimo sí tiene permisos para consultar la configuración interna directamente."
+          }
+        }
+      ]
+    }
+  ]
+}
