@@ -68,6 +68,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Recursos estáticos de la interfaz interactiva web
+                        .requestMatchers("/", "/index.html", "/style.css", "/app.js", "/favicon.ico", "/static/**").permitAll()
                         // Simulación de Cloud Metadata IMDS y servicios de Intranet:
                         // Solo accesible con credenciales de ADMIN o sistema interno
                         .requestMatchers("/internal/**").hasAnyRole("ADMIN", "INTERNAL_SYSTEM")

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSRF Console — OWASP A10:2021</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="navbar">
+    <div class="brand-wrapper">
+      <div class="brand-icon">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>SSRF Inspector</h1>
+        <div class="brand-subtitle">
+          <span>Server-Side Request Forgery</span>
+          <span class="badge-owasp">A10:2021</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTHENTICATION / IDENTITY SWITCHER -->
+    <div class="auth-bar">
+      <span class="auth-label">Auth:</span>
+      <div class="auth-switch-btns">
+        <button class="btn-auth active" id="btn-auth-alumno" title="Usuario estándar (alumno:password)">
+          alumno
+        </button>
+        <button class="btn-auth" id="btn-auth-admin" title="Administrador (admin:password)">
+          admin
+        </button>
+      </div>
+      <span class="current-role-badge role-user" id="badge-active-role">ROLE_USER</span>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-tab="tab-comparador" id="tab-btn-comparador">
+      Comparador
+    </button>
+    <button class="nav-tab" data-tab="tab-consola" id="tab-btn-consola">
+      Consola HTTP
+    </button>
+    <button class="nav-tab" data-tab="tab-teoria" id="tab-btn-teoria">
+      Auditoría y referencia
+    </button>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-content">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: COMPARADOR (VULNERABLE VS MITIGADO) -->
+    <!-- ========================================== -->
+    <section class="tab-pane active" id="tab-comparador">
+
+      <!-- ARCHITECTURE SUMMARY -->
+      <div class="concept-banner">
+        <div class="banner-col">
+          <h3>Mecanismo de explotación</h3>
+          <p>
+            El servidor procesa una URL no autenticada ni validada. Al realizar la petición saliente desde la red de confianza, hereda los privilegios del host y elude firewalls perimetrales.
+          </p>
+          <div class="flow-diagram">
+            <span class="flow-node client">Cliente</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-node server">Backend</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-node internal">Intranet / Metadata</span>
+          </div>
+        </div>
+        <div class="banner-col">
+          <h3>Mecanismo de mitigación</h3>
+          <p>
+            Lista blanca de esquemas (HTTP/S), resolución previa de DNS con validación de IP (bloqueo de loopback, RFC 1918 e IMDS <code>169.254.169.254</code>) y deshabilitación de redirecciones 302.
+          </p>
+          <div class="flow-diagram">
+            <span class="flow-node client">Cliente</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-node server">Validador DNS/IP</span>
+            <span class="flow-arrow">&rarr;</span>
+            <span class="flow-node safe">400 Bad Request</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRESET SCENARIO SELECTOR -->
+      <div class="scenarios-section">
+        <div class="section-title">
+          <span>Escenarios de prueba</span>
+        </div>
+        <div class="scenario-grid">
+          
+          <div class="scenario-card active" data-scenario="cloud-metadata" id="preset-cloud-metadata">
+            <div class="scenario-card-header">
+              <span class="scenario-title">Metadatos Cloud (AWS IMDS)</span>
+              <span class="scenario-badge">IAM</span>
+            </div>
+            <p class="scenario-desc">Simulación de extracción de credenciales temporales de instancia EC2.</p>
+            <div class="scenario-target">/latest/meta-data/iam/security-credentials</div>
+          </div>
+
+          <div class="scenario-card" data-scenario="intranet-keys-get" id="preset-intranet-keys-get">
+            <div class="scenario-card-header">
+              <span class="scenario-title">Bóveda interna (GET)</span>
+              <span class="scenario-badge">Intranet</span>
+            </div>
+            <p class="scenario-desc">Consulta de credenciales de base de datos y llaves de API en red interna.</p>
+            <div class="scenario-target">/internal/admin/claves-api</div>
+          </div>
+
+          <div class="scenario-card" data-scenario="intranet-keys-post" id="preset-intranet-keys-post">
+            <div class="scenario-card-header">
+              <span class="scenario-title">Bóveda interna (POST JSON)</span>
+              <span class="scenario-badge">JSON Body</span>
+            </div>
+            <p class="scenario-desc">Envío de URL objetivo encapsulada en payload JSON (/fetch-url).</p>
+            <div class="scenario-target">POST { "url": ".../claves-api" }</div>
+          </div>
+
+          <div class="scenario-card" data-scenario="file-scheme" id="preset-file-scheme">
+            <div class="scenario-card-header">
+              <span class="scenario-title">Esquema file://</span>
+              <span class="scenario-badge">Local File</span>
+            </div>
+            <p class="scenario-desc">Lectura directa de archivos del sistema operativo sin protocolo HTTP.</p>
+            <div class="scenario-target">file:///C:/Windows/win.ini</div>
+          </div>
+
+          <div class="scenario-card" data-scenario="loopback-ip" id="preset-loopback-ip">
+            <div class="scenario-card-header">
+              <span class="scenario-title">Loopback IP (127.0.0.1)</span>
+              <span class="scenario-badge">Bypass</span>
+            </div>
+            <p class="scenario-desc">Evasión de filtros basados en hostname mediante notación IPv4 directa.</p>
+            <div class="scenario-target">http://127.0.0.1:8080/internal/admin/claves-api</div>
+          </div>
+
+          <div class="scenario-card" data-scenario="legit-public" id="preset-legit-public">
+            <div class="scenario-card-header">
+              <span class="scenario-title">Petición externa pública</span>
+              <span class="scenario-badge">200 OK</span>
+            </div>
+            <p class="scenario-desc">Petición legítima a dominio público sin conflicto con la política de seguridad.</p>
+            <div class="scenario-target">https://httpbin.org/get</div>
+          </div>
+
+          <div class="scenario-card" data-scenario="direct-perimeter" id="preset-direct-perimeter">
+            <div class="scenario-card-header">
+              <span class="scenario-title">Acceso perimetral directo</span>
+              <span class="scenario-badge">403 Forbidden</span>
+            </div>
+            <p class="scenario-desc">Comprobación de denegación perimetral para el usuario sin privilegios.</p>
+            <div class="scenario-target">GET /internal/admin/claves-api</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ACTIVE SCENARIO CONTROL BAR -->
+      <div class="active-scenario-bar">
+        <div class="asb-top">
+          <div class="asb-info">
+            <h2 id="current-scenario-title">Metadatos Cloud (AWS IMDS)</h2>
+            <p class="asb-explanation" id="current-scenario-desc">
+              El servidor consulta el endpoint local de metadatos exponiendo credenciales de acceso de IAM.
+            </p>
+          </div>
+          <div class="asb-actions">
+            <button class="btn btn-primary" id="btn-run-comparison">
+              Comparar ambos
+            </button>
+            <button class="btn btn-vuln" id="btn-run-vuln-only">
+              Vulnerable
+            </button>
+            <button class="btn btn-safe" id="btn-run-safe-only">
+              Mitigado
+            </button>
+          </div>
+        </div>
+
+        <div class="asb-inputs">
+          <span class="method-tag" id="current-method-tag">GET</span>
+          <input type="text" class="target-url-input" id="current-target-url" value="http://localhost:8080/latest/meta-data/iam/security-credentials" placeholder="URL objetivo...">
+          <button class="btn" id="btn-reset-scenario-url" title="Restablecer URL">
+            <svg class="svg-icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- SIDE-BY-SIDE COMPARISON PANELS -->
+      <div class="comparison-grid">
+
+        <!-- VULNERABLE -->
+        <div class="comparison-card">
+          <div class="card-header-panel">
+            <div class="card-header-title">
+              <span class="status-dot dot-vuln"></span>
+              <h3>Vulnerable</h3>
+              <span class="endpoint-code" id="vuln-endpoint-path">/api/vulnerable/preview</span>
+            </div>
+            <span class="status-badge status-empty" id="vuln-status-badge">Sin ejecutar</span>
+          </div>
+
+          <div class="card-body-panel">
+            <div class="meta-stats">
+              <span class="meta-stat-item">Latencia: <strong id="vuln-response-time">-</strong></span>
+              <span class="meta-stat-item">Status: <strong id="vuln-http-code">-</strong></span>
+            </div>
+
+            <div class="verdict-box neutral" id="vuln-verdict-box">
+              Ejecuta una petición para inspeccionar el comportamiento del endpoint vulnerable.
+            </div>
+
+            <div class="response-viewer-wrapper">
+              <div class="response-viewer-header">
+                <span>Respuesta HTTP</span>
+                <button class="btn-copy" id="btn-copy-vuln" title="Copiar">
+                  <svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copiar</span>
+                </button>
+              </div>
+              <pre class="response-code-box" id="vuln-response-box">// Respuesta no iniciada</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- MITIGATED -->
+        <div class="comparison-card">
+          <div class="card-header-panel">
+            <div class="card-header-title">
+              <span class="status-dot dot-safe"></span>
+              <h3>Mitigado</h3>
+              <span class="endpoint-code" id="safe-endpoint-path">/api/mitigado/preview</span>
+            </div>
+            <span class="status-badge status-empty" id="safe-status-badge">Sin ejecutar</span>
+          </div>
+
+          <div class="card-body-panel">
+            <div class="meta-stats">
+              <span class="meta-stat-item">Latencia: <strong id="safe-response-time">-</strong></span>
+              <span class="meta-stat-item">Status: <strong id="safe-http-code">-</strong></span>
+            </div>
+
+            <div class="verdict-box neutral" id="safe-verdict-box">
+              El validador inspeccionará la URL y la resolución IP antes de conectar.
+            </div>
+
+            <div class="response-viewer-wrapper">
+              <div class="response-viewer-header">
+                <span>Respuesta HTTP</span>
+                <button class="btn-copy" id="btn-copy-safe" title="Copiar">
+                  <svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  <span>Copiar</span>
+                </button>
+              </div>
+              <pre class="response-code-box" id="safe-response-box">// Respuesta no iniciada</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: CONSOLA DE PETICIONES HTTP -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-consola">
+
+      <div class="console-container">
+        
+        <!-- REQUEST BUILDER -->
+        <div class="console-card">
+          <div class="section-title">
+            <span>Constructor de petición</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="console-endpoint-type">Destino:</label>
+            <select class="form-select" id="console-endpoint-type">
+              <option value="vuln-get">Vulnerable GET — /api/vulnerable/preview?url=...</option>
+              <option value="vuln-post">Vulnerable POST — /api/vulnerable/fetch-url</option>
+              <option value="safe-get">Mitigado GET — /api/mitigado/preview?url=...</option>
+              <option value="safe-post">Mitigado POST — /api/mitigado/fetch-url</option>
+              <option value="direct-keys">Directo GET — /internal/admin/claves-api</option>
+              <option value="direct-cloud">Directo GET — /latest/meta-data/iam/security-credentials</option>
+              <option value="custom">URL personalizada</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-target-url">
+            <label class="form-label" for="console-target-url">URL objetivo (parámetro url):</label>
+            <input type="text" class="form-input" id="console-target-url" value="http://localhost:8080/internal/admin/claves-api">
+          </div>
+
+          <div class="form-group" id="group-full-url" style="display:none;">
+            <label class="form-label" for="console-full-url">URL completa:</label>
+            <input type="text" class="form-input" id="console-full-url" value="http://localhost:8080/api/vulnerable/preview?url=http://localhost:8080/internal/admin/claves-api">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="console-method">Método:</label>
+            <select class="form-select" id="console-method">
+              <option value="GET">GET</option>
+              <option value="POST">POST</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="group-json-body" style="display:none;">
+            <label class="form-label" for="console-json-body">Payload JSON:</label>
+            <textarea class="form-textarea" id="console-json-body">{
+  "url": "http://localhost:8080/internal/admin/claves-api"
+}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Cabecera de autenticación:</label>
+            <div style="font-size:11px;color:var(--text-muted);background:var(--bg-canvas);padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border-subtle);font-family:var(--font-mono);" id="console-auth-preview">
+              Authorization: Basic YWx1bW5vOnBhc3N3b3Jk (alumno:password)
+            </div>
+          </div>
+
+          <div style="margin-top:auto;padding-top:8px;">
+            <button class="btn btn-primary" id="btn-console-send" style="width:100%;height:32px;">
+              Enviar petición
+            </button>
+          </div>
+        </div>
+
+        <!-- RESPONSE INSPECTOR -->
+        <div class="console-card">
+          <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;">
+            <span>Inspector de respuesta</span>
+            <span class="status-badge status-empty" id="console-status-badge">Sin enviar</span>
+          </div>
+
+          <div class="meta-stats">
+            <span class="meta-stat-item">Latencia: <strong id="console-time-stat">-</strong></span>
+            <span class="meta-stat-item">Código: <strong id="console-status-stat">-</strong></span>
+            <span class="meta-stat-item">Content-Type: <strong id="console-type-stat">-</strong></span>
+          </div>
+
+          <div class="verdict-box neutral" id="console-verdict-box">
+            Define la petición y presiona Enviar.
+          </div>
+
+          <div class="response-viewer-wrapper">
+            <div class="response-viewer-header">
+              <span>Cuerpo de respuesta</span>
+              <button class="btn-copy" id="btn-copy-console" title="Copiar">
+                <svg class="svg-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>Copiar</span>
+              </button>
+            </div>
+            <pre class="response-code-box" id="console-response-box" style="min-height:240px;">// Respuesta no iniciada</pre>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: AUDITORÍA Y REFERENCIA TÉCNICA -->
+    <!-- ========================================== -->
+    <section class="tab-pane" id="tab-teoria">
+
+      <div class="table-wrapper">
+        <div class="table-header-bar">
+          <div class="section-title" style="margin-bottom:0;">
+            <span>Registro de peticiones</span>
+          </div>
+          <button class="btn" id="btn-clear-history" style="font-size:11px;height:24px;padding:2px 8px;">
+            Limpiar logs
+          </button>
+        </div>
+
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Usuario</th>
+              <th>Endpoint</th>
+              <th>Método</th>
+              <th>URL Objetivo</th>
+              <th>Status</th>
+              <th>Diagnóstico</th>
+            </tr>
+          </thead>
+          <tbody id="audit-table-body">
+            <tr>
+              <td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px;">
+                Sin eventos registrados.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="guide-card">
+        <div class="section-title">
+          <span>Referencia de controles y mitigación</span>
+        </div>
+
+        <div class="guide-grid">
+          
+          <div class="guide-item">
+            <h4>Confianza perimetral</h4>
+            <p>
+              El servidor se encuentra dentro de la zona de confianza de la red. Una petición SSRF utiliza el proceso backend como intermediario para evadir filtros perimetrales y consultar puertos no expuestos.
+            </p>
+          </div>
+
+          <div class="guide-item">
+            <h4>Metadatos Cloud (IMDS)</h4>
+            <p>
+              En entornos AWS, GCP o Azure, la dirección de link-local <code>169.254.169.254</code> expone credenciales de rol de la máquina. El acceso mediante SSRF compromete tokens de infraestructura.
+            </p>
+          </div>
+
+          <div class="guide-item">
+            <h4>Esquemas no HTTP</h4>
+            <p>
+              Bibliotecas estándar permiten protocolos como <code>file://</code> o <code>gopher://</code>. Esto habilita lectura directa del sistema de archivos local si no existe whitelist explícita de esquema.
+            </p>
+          </div>
+
+          <div class="guide-item">
+            <h4>Implementación de defensa</h4>
+            <p>
+              <code>SsrfValidatorService</code> valida protocolo estricto, realiza resolución DNS y rechaza direcciones de loopback (<code>127.0.0.1</code>, <code>::1</code>), RFC 1918 y rangos de metadatos antes del handshake de red.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div>
+      <span>SSRF Security Lab</span>
+    </div>
+    <div>
+      <span>Endpoint local: <code>http://localhost:8080</code></span>
+    </div>
+  </footer>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast-notification">Notificación</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
