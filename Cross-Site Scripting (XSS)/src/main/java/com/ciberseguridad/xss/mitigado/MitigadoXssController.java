@@ -127,6 +127,23 @@ public class MitigadoXssController {
         return html.toString();
     }
 
+    /**
+     * Endpoint protegido contra Reflected XSS.
+     * Escapa el parametro 'q' usando HtmlUtils.htmlEscape() antes de reflejarlo en el HTML.
+     */
+    @GetMapping(value = "/api/mitigado/buscar", produces = MediaType.TEXT_HTML_VALUE)
+    public String buscarMitigado(@RequestParam(name = "q", defaultValue = "") String q) {
+        String qEscapada = HtmlUtils.htmlEscape(q);
+        return "<!DOCTYPE html>\n" +
+                "<html lang=\"es\">\n<head>\n" +
+                "  <meta charset=\"UTF-8\">\n" +
+                "  <title>Resultados de Búsqueda (Mitigado)</title>\n" +
+                "</head>\n<body>\n" +
+                "  <h2>Resultados de búsqueda (Mitigado)</h2>\n" +
+                "  <p>Resultados para: " + qEscapada + "</p>\n" +
+                "</body>\n</html>";
+    }
+
     // =========================================================================
     // DEFENSA 2: CONTENT SECURITY POLICY (CSP)
     //

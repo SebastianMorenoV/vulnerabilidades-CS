@@ -114,6 +114,33 @@ public class VulnerableXssController {
         return html.toString();
     }
 
+    // =========================================================================
+    // REFLECTED XSS (XSS Reflejado)
+    //
+    // El usuario envia un parametro en la URL (?q=...).
+    // El servidor toma ese parametro y lo devuelve directamente en la respuesta
+    // HTML sin sanitizar ni escapar.
+    //
+    // Si la victima visita: /api/vulnerable/buscar?q=<script>alert('Reflected XSS')</script>
+    // el navegador interpreta la etiqueta script y ejecuta el codigo.
+    // =========================================================================
+
+    /**
+     * Endpoint vulnerable a Reflected XSS.
+     * Refleja el parametro 'q' directamente en el HTML devuelto sin sanitizar.
+     */
+    @GetMapping(value = "/api/vulnerable/buscar", produces = MediaType.TEXT_HTML_VALUE)
+    public String buscarVulnerable(@RequestParam(name = "q", defaultValue = "") String q) {
+        return "<!DOCTYPE html>\n" +
+                "<html lang=\"es\">\n<head>\n" +
+                "  <meta charset=\"UTF-8\">\n" +
+                "  <title>Resultados de Búsqueda (Vulnerable)</title>\n" +
+                "</head>\n<body>\n" +
+                "  <h2>Resultados de búsqueda</h2>\n" +
+                "  <p>Resultados para: " + q + "</p>\n" +
+                "</body>\n</html>";
+    }
+
     /**
      * Reiniciar los comentarios del muro vulnerable.
      */
